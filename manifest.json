@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "YT Focus Mode",
+  "version": "1.0",
+
+  "description": "Locks you into one YouTube video during focus sessions.",
+
+  "permissions": ["storage"],
+
+  "host_permissions": ["*://www.youtube.com/*"],
+
+  "action": {
+    "default_popup": "popup.html"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
