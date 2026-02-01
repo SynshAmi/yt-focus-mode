@@ -1,5 +1,6 @@
 console.log("LockIn running...");
 
+let isPaused = false;
 let lockedVideo = null;
 let focusActive = false;
 let lastRedirect = 0;
@@ -23,9 +24,11 @@ function syncState() {
     (data) => {
       focusActive = data.focusActive || false;
       lockedVideo = data.allowedVideo || null;
+      isPaused = data.isPaused || false;
 
-      if (!focusActive && data.isPaused) {
+      if (!focusActive && isPaused) {
         chrome.storage.local.set({ isPaused: false });
+        isPaused = false;
       }
 
       if (!focusActive) {
@@ -56,6 +59,7 @@ function redirectToLocked() {
 
   chrome.storage.local.get(["lastTime"], (data) => {
     const t = data.lastTime || 0;
+
     window.location.replace(
       `https://www.youtube.com/watch?v=${lockedVideo}&t=${t}s`
     );
@@ -65,7 +69,7 @@ function redirectToLocked() {
 function incrementBlockedCount() {
   chrome.storage.local.get(["blockedCount"], (data) => {
     chrome.storage.local.set({
-      blockedCount: (data.blockedCount || 0) + 1
+      blockedCount: (data.blockedCount || 0) + 1,
     });
   });
 }
@@ -75,61 +79,52 @@ function shouldBlock(url) {
 
   const targetVid = getVideoId(url);
 
-  chrome.storage.local.get(["isPaused"], (pauseData) => {
-    const paused = pauseData.isPaused || false;
-
-    if (paused) {
-      if (url.includes("/shorts")) {
-        incrementBlockedCount();
-        alert("Focus Mode: Shorts blocked.");
-        redirectToLocked();
-        return;
-      }
-
-      if (targetVid) {
-        lockedVideo = targetVid;
-
-        chrome.storage.local.set({
-          allowedVideo: targetVid,
-          isPaused: false,
-          lastTime: 0
-        });
-
-        return;
-      }
-
-      return;
-    }
-
-    if (!lockedVideo) {
-      if (targetVid) {
-        lockedVideo = targetVid;
-        chrome.storage.local.set({ allowedVideo: targetVid });
-      }
-      return;
-    }
-
-    if (targetVid && targetVid !== lockedVideo) {
+  if (isPaused) {
+    if (url.includes("/shorts")) {
       incrementBlockedCount();
-      alert("Focus Mode: Other videos blocked.");
+      alert("Focus Mode: Shorts blocked.");
       redirectToLocked();
-      return;
+      return true;
     }
 
-    if (
-      url.includes("/shorts") ||
-      url.includes("/feed") ||
-      url.includes("/results") ||
-      url.includes("/channel") ||
-      url.includes("/playlist") ||
-      url.includes("/@")
-    ) {
-      incrementBlockedCount();
-      alert("Focus Mode: Distraction blocked.");
-      redirectToLocked();
-      return;
+    if (targetVid) {
+      lockedVideo = targetVid;
+      chrome.storage.local.set({
+        allowedVideo: targetVid,
+        isPaused: false,
+        lastTime: 0,
+      });
+      isPaused = false;
+      return false;
     }
-  });
+
+    return false;
+  }
+
+  if (!lockedVideo) {
+    if (targetVid) {
+      lockedVideo = targetVid;
+      chrome.storage.local.set({ allowedVideo: targetVid });
+    }
+    return false;
+  }
+
+  if (targetVid && targetVid !== lockedVideo) {
+    incrementBlockedCount();
+    alert("Focus Mode: Other videos blocked.");
+    return true;
+  }
+
+  if (
+    url.includes("/feed") ||
+    url.includes("/channel") ||
+    url.includes("/playlist") ||
+    url.includes("/@")
+  ) {
+    incrementBlockedCount();
+    alert("Focus Mode: Distraction blocked.");
+    return true;
+  }
 
   return false;
 }
@@ -137,25 +132,30 @@ function shouldBlock(url) {
 function enforcePage() {
   if (!focusActive || !lockedVideo) return;
 
-  const currentVid = getVideoId(window.location.href);
   const path = window.location.pathname;
 
-  if (currentVid && currentVid !== lockedVideo) {
-    redirectToLocked();
-    return;
-  }
+  chrome.storage.local.get(["isPaused"], (data) => {
+    const paused = data.isPaused || false;
 
-  if (
-    path === "/" ||
-    path.startsWith("/shorts") ||
-    path.startsWith("/results") ||
-    path.startsWith("/channel") ||
-    path.startsWith("/@") ||
-    path.startsWith("/feed") ||
-    path.startsWith("/playlist")
-  ) {
-    redirectToLocked();
-  }
+    if (paused) {
+      if (path.startsWith("/shorts")) {
+        redirectToLocked();
+      }
+      return;
+    }
+
+    if (
+      path === "/" ||
+      path.startsWith("/shorts") ||
+      path.startsWith("/results") ||
+      path.startsWith("/channel") ||
+      path.startsWith("/@") ||
+      path.startsWith("/feed") ||
+      path.startsWith("/playlist")
+    ) {
+      redirectToLocked();
+    }
+  });
 }
 
 (function patchHistory() {
