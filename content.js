@@ -1,4 +1,4 @@
-console.log("YT Focus Mode running...");
+console.log("LockIn running...");
 
 let lockedVideo = null;
 let focusActive = false;
@@ -14,15 +14,25 @@ function getVideoId(url) {
 
 function getCurrentTime() {
   const video = document.querySelector("video");
-  if (!video) return 0;
-  return Math.floor(video.currentTime);
+  return video ? Math.floor(video.currentTime) : 0;
 }
 
 function syncState() {
-  chrome.storage.local.get(["focusActive", "allowedVideo"], (data) => {
-    focusActive = data.focusActive || false;
-    lockedVideo = data.allowedVideo || null;
-  });
+  chrome.storage.local.get(
+    ["focusActive", "allowedVideo", "isPaused", "blockedCount"],
+    (data) => {
+      focusActive = data.focusActive || false;
+      lockedVideo = data.allowedVideo || null;
+
+      if (!focusActive && data.isPaused) {
+        chrome.storage.local.set({ isPaused: false });
+      }
+
+      if (!focusActive) {
+        chrome.storage.local.set({ blockedCount: 0 });
+      }
+    }
+  );
 }
 
 function lockIfVideoOpen() {
@@ -36,22 +46,27 @@ function lockIfVideoOpen() {
 
 setInterval(() => {
   if (!focusActive || !lockedVideo) return;
-
-  const t = getCurrentTime();
-  chrome.storage.local.set({ lastTime: t });
+  chrome.storage.local.set({ lastTime: getCurrentTime() });
 }, 1000);
 
 function redirectToLocked() {
   const now = Date.now();
-  if (now - lastRedirect < 2000) return;
+  if (now - lastRedirect < 1500) return;
   lastRedirect = now;
 
   chrome.storage.local.get(["lastTime"], (data) => {
     const t = data.lastTime || 0;
-
     window.location.replace(
-      "https://www.youtube.com/watch?v=" + lockedVideo + "&t=" + t + "s"
+      `https://www.youtube.com/watch?v=${lockedVideo}&t=${t}s`
     );
+  });
+}
+
+function incrementBlockedCount() {
+  chrome.storage.local.get(["blockedCount"], (data) => {
+    chrome.storage.local.set({
+      blockedCount: (data.blockedCount || 0) + 1
+    });
   });
 }
 
@@ -60,30 +75,61 @@ function shouldBlock(url) {
 
   const targetVid = getVideoId(url);
 
-  if (!lockedVideo) {
-    if (targetVid) {
-      lockedVideo = targetVid;
-      chrome.storage.local.set({ allowedVideo: targetVid });
+  chrome.storage.local.get(["isPaused"], (pauseData) => {
+    const paused = pauseData.isPaused || false;
+
+    if (paused) {
+      if (url.includes("/shorts")) {
+        incrementBlockedCount();
+        alert("Focus Mode: Shorts blocked.");
+        redirectToLocked();
+        return;
+      }
+
+      if (targetVid) {
+        lockedVideo = targetVid;
+
+        chrome.storage.local.set({
+          allowedVideo: targetVid,
+          isPaused: false,
+          lastTime: 0
+        });
+
+        return;
+      }
+
+      return;
     }
-    return false;
-  }
 
-  if (targetVid && targetVid !== lockedVideo) {
-    alert("Focus Mode: Other videos blocked.");
-    return true;
-  }
+    if (!lockedVideo) {
+      if (targetVid) {
+        lockedVideo = targetVid;
+        chrome.storage.local.set({ allowedVideo: targetVid });
+      }
+      return;
+    }
 
-  if (
-    url.includes("/shorts") ||
-    url.includes("/feed") ||
-    url.includes("/results") ||
-    url.includes("/channel") ||
-    url.includes("/playlist") ||
-    url.includes("/@")
-  ) {
-    alert("Focus Mode: Distraction blocked.");
-    return true;
-  }
+    if (targetVid && targetVid !== lockedVideo) {
+      incrementBlockedCount();
+      alert("Focus Mode: Other videos blocked.");
+      redirectToLocked();
+      return;
+    }
+
+    if (
+      url.includes("/shorts") ||
+      url.includes("/feed") ||
+      url.includes("/results") ||
+      url.includes("/channel") ||
+      url.includes("/playlist") ||
+      url.includes("/@")
+    ) {
+      incrementBlockedCount();
+      alert("Focus Mode: Distraction blocked.");
+      redirectToLocked();
+      return;
+    }
+  });
 
   return false;
 }
@@ -142,17 +188,15 @@ document.addEventListener(
   true
 );
 
-chrome.storage.onChanged.addListener(() => {
-  syncState();
-});
+chrome.storage.onChanged.addListener(syncState);
 
 window.addEventListener("load", () => {
   syncState();
 
   setTimeout(() => {
-    if (focusActive) {
-      lockIfVideoOpen();
-    }
+    chrome.storage.local.get(["focusActive"], (data) => {
+      if (data.focusActive) lockIfVideoOpen();
+    });
   }, 500);
 });
 

@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>YT Focus Mode</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 15px;
-        width: 220px;
-      }
-
-      button {
-        width: 100%;
-        padding: 10px;
-        margin-top: 10px;
-        border: none;
-        cursor: pointer;
-        font-size: 14px;
-        border-radius: 8px;
-      }
-
-      #start {
-        background: black;
-        color: white;
-      }
-
-      #stop {
-        background: red;
-        color: white;
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <title>LockIn</title>
+    <link rel="stylesheet" href="popup.css" />
   </head>
 
   <body>
-    <h3>YT Focus Mode</h3>
+    <div class="popup">
+      <div class="header">
+        <h1>LockIn</h1>
+        <p class="subtitle">Distraction-free YouTube.</p>
+      </div>
 
-    <button id="start">Start Focus</button>
-    <button id="stop">Stop Focus</button>
+      <div class="content">
+        <div class="toggleRow">
+          <div class="left">
+            <span id="dot"></span>
+            <span class="label">Focus Mode</span>
+          </div>
+
+          <button id="toggle" class="toggleBtn">
+            <span class="knob"></span>
+          </button>
+        </div>
+
+        <div id="statusBox" class="statusBox">
+          Focus mode is off.
+        </div>
+
+        <div class="statsBox">
+          <span>Distractions blocked</span>
+          <span id="blockedCount" class="count">0</span>
+        </div>
+
+        <button id="pauseBtn" class="pauseBtn">
+          Pause Session
+        </button>
+      </div>
+    </div>
 
     <script src="popup.js"></script>
   </body>

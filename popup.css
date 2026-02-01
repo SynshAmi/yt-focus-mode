@@ -1,0 +1,145 @@
+html {
+  margin: 0;
+  padding: 0;
+  background: #171717 !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 240px;
+  overflow: hidden;
+  background: #171717 !important;
+  font-family: Arial, sans-serif;
+}
+
+.popup {
+  width: 240px;
+  background: #171717;
+  border-radius: 0px;
+  border: 1px solid #262626;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.header {
+  padding: 18px;
+  border-bottom: 1px solid rgba(60, 60, 60, 0.4);
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0;
+  color: white;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #a3a3a3;
+}
+
+.content {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #737373;
+}
+
+.label {
+  font-size: 13px;
+  color: #a3a3a3;
+}
+
+.toggleBtn {
+  width: 48px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  background: #404040;
+  cursor: pointer;
+  position: relative;
+}
+
+.knob {
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  transition: transform 0.25s;
+}
+
+.toggleBtn.active {
+  background: #ef4444;
+}
+
+.toggleBtn.active .knob {
+  transform: translateX(20px);
+}
+
+.statusBox {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(40, 40, 40, 0.55);
+  font-size: 12px;
+  color: #a3a3a3;
+}
+
+.statusBox a {
+  color: white;
+  font-family: monospace;
+  text-decoration: none;
+}
+
+.statsBox {
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(40, 40, 40, 0.35);
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #a3a3a3;
+}
+
+.count {
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+}
+
+.pauseBtn {
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  padding: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12px;
+  display: none;
+}
+
+.pauseBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
